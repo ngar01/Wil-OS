@@ -1,0 +1,86 @@
+# Wil-OS Partition Table for ESP32-S3 (16MB Flash)
+# Format: Name, Type, SubType, Offset, Size, Flags
+#
+# Memory Layout Strategy:
+#   Total Flash: 16MB (0x1000000)
+#   - Bootloader: 32KB (fixed by ESP-IDF)
+#   - Partition Table: 4KB (fixed)
+#   - NVS: 20KB (configuration, Wi-Fi credentials)
+#   - OTA Data: 8KB (OTA state tracking)
+#   - Factory: 4MB (initial firmware, fallback)
+#   - OTA_0: 4MB (primary update slot)
+#   - OTA_1: 4MB (secondary update slot)
+#   - Storage: 4MB (LittleFS - user files, apps data)
+#
+# Design Rationale:
+#   - Dual OTA slots for safe updates with rollback capability
+#   - Factory partition preserved for emergency recovery
+#   - 4MB per firmware slot accommodates future growth (current ~1.5MB)
+#   - Dedicated storage partition for persistent user data
+#
+# Offsets Calculation:
+#   0x0000      - Bootloader (reserved, not in table)
+#   0x8000      - Partition table (this file)
+#   0x9000      - NVS
+#   0xE000      - OTA Data selector
+#   0x10000     - Factory app
+#   0x410000    - OTA_0
+#   0x810000    - OTA_1
+#   0xC10000    - Storage (LittleFS)
+#   0x1000000   - End of flash
+
+# Name,        Type,    SubType,     Offset,     Size,       Flags
+nvs,           data,    nvs,         0x9000,     0x5000,
+otadata,       data,    ota,         0xE000,     0x2000,
+factory,       app,     factory,     0x10000,    0x400000,
+ota_0,         app,     ota_0,       0x410000,   0x400000,
+ota_1,         app,     ota_1,       0x810000,   0x400000,
+storage,       data,    spiffs,      0xC10000,   0x3F0000,
+
+# Notes:
+# 1. NVS (Non-Volatile Storage):
+#    - Stores Wi-Fi credentials, OTA server config, system settings
+#    - 20KB sufficient for ~50 key-value pairs
+#
+# 2. OTA Data Selector:
+#    - 8KB partition tracks active OTA slot (ota_0 or ota_1)
+#    - Written by bootloader after successful update
+#    - Critical for rollback mechanism
+#
+# 3. Factory Partition:
+#    - Golden image, never overwritten by OTA
+#    - Accessible via bootloader menu (hold BOOT button)
+#    - Ensures device always recoverable
+#
+# 4. OTA Slots (ota_0, ota_1):
+#    - Dual-bank update: download to inactive slot while running from active
+#    - If new firmware crashes, bootloader auto-reverts to previous slot
+#    - Size: 4MB each (2.5x current firmware size for headroom)
+#
+# 5. Storage Partition:
+#    - SubType 'spiffs' compatible with both SPIFFS and LittleFS
+#    - 4MB - 64KB (to align on sector boundaries) = 0x3F0000
+#    - LittleFS preferred: power-loss resilience, wear leveling
+#
+# 6. Flags:
+#    - Encrypted: Omitted (add 'encrypted' flag if flash encryption enabled)
+#    - All partitions unencrypted by default for debugging
+#
+# Security Considerations:
+#   - For production: enable flash encryption and secure boot
+#   - Add 'encrypted' flag to factory, ota_0, ota_1
+#   - NVS encryption requires separate nvs_keys partition
+#
+# Verification Commands:
+#   $ idf.py partition-table        # Display parsed table
+#   $ idf.py partition-table-flash  # Flash partition table only
+#
+# Modification Procedure:
+#   1. Update this file
+#   2. Run: idf.py build
+#   3. Flash: idf.py flash (includes partition table)
+#   4. WARNING: Changing offsets erases partitions!
+#
+# Advanced: Custom Partition Types
+#   For future extensions (e.g., coredump partition):
+#   coredump, data, coredump, 0x1000000, 0x10000,

@@ -1,0 +1,268 @@
+# Wil-OS - ESP-IDF Configuration Defaults
+# This file ensures reproducible builds across all development environments
+# Any engineer cloning the repo will get identical configuration
+#
+# Usage:
+#   - Auto-loaded on first build (generates sdkconfig)
+#   - Overrides menuconfig defaults
+#   - Committed to version control (sdkconfig is .gitignored)
+#
+# Modification:
+#   1. Change values here (not in menuconfig UI)
+#   2. Delete build/sdkconfig
+#   3. Run: idf.py build
+#   4. Commit this file
+#
+# Documentation: Each CONFIG is explained below
+
+# ============================================================================
+# HARDWARE PLATFORM
+# ============================================================================
+
+# Target chip: ESP32-S3 (Xtensa dual-core, AI extensions)
+CONFIG_IDF_TARGET="esp32s3"
+
+# CPU Frequency: 240MHz (maximum performance)
+# Alternatives: 160MHz (balanced), 80MHz (power saving)
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ=240
+
+# Flash Configuration
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y           # QIO: Fastest flash mode (Quad I/O)
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y           # 80MHz flash clock (max for QIO)
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y          # 16MB flash chip
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+
+# ============================================================================
+# PSRAM (External RAM) - CRITICAL for framebuffer and caching
+# ============================================================================
+
+CONFIG_SPIRAM=y                            # Enable PSRAM support
+CONFIG_SPIRAM_MODE_OCT=y                   # Octal SPI mode (highest bandwidth)
+CONFIG_SPIRAM_SPEED_80M=y                  # 80MHz PSRAM clock
+CONFIG_SPIRAM_SIZE=8388608                 # 8MB (auto-detected, documenting here)
+
+# PSRAM memory allocation strategy
+CONFIG_SPIRAM_USE_MALLOC=y                 # Allow malloc() from PSRAM
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384  # Keep <16KB allocations in IRAM (performance)
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768 # Reserve 32KB IRAM for critical tasks
+
+# Cache configuration for PSRAM access
+CONFIG_SPIRAM_FETCH_INSTRUCTIONS=y         # Allow code execution from PSRAM
+CONFIG_SPIRAM_RODATA=y                     # Place read-only data in PSRAM
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y             # Execute-in-place from PSRAM
+
+# Cache line size (affects PSRAM throughput)
+CONFIG_CACHE_L1_CACHE_LINE_SIZE_32=y       # 32-byte cache lines (balanced)
+
+# ============================================================================
+# FREERTOS KERNEL
+# ============================================================================
+
+# Kernel tick frequency (affects task switching granularity)
+CONFIG_FREERTOS_HZ=1000                    # 1ms tick = precise timing
+
+# Task watchdog (detects hung tasks)
+CONFIG_ESP_TASK_WDT_EN=y                   # Enable task watchdog
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=10           # 10s timeout before reset
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=y # Monitor CPU0 idle task
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1=y # Monitor CPU1 idle task
+
+# Interrupt watchdog (detects ISR lockups)
+CONFIG_ESP_INT_WDT=y
+CONFIG_ESP_INT_WDT_TIMEOUT_MS=300          # 300ms ISR timeout
+
+# Stack overflow detection (CRITICAL for debugging)
+CONFIG_FREERTOS_CHECK_STACKOVERFLOW_PTRVAL=y  # Method 2: pattern check
+CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y     # Use CPU watchpoint (precise)
+
+# Thread local storage (required for some IDF components)
+CONFIG_FREERTOS_THREAD_LOCAL_STORAGE_POINTERS=1
+
+# Task priority inheritance (prevents priority inversion)
+CONFIG_FREERTOS_USE_MUTEXES=y
+
+# CPU affinity
+CONFIG_FREERTOS_UNICORE=n                  # Enable dual-core mode
+
+# ============================================================================
+# LOGGING SYSTEM
+# ============================================================================
+
+# Default log level (overridable per-component with esp_log_level_set)
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y            # INFO level for production
+# CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y         # Uncomment for debugging
+
+# Detailed log format
+CONFIG_LOG_COLORS=y                        # ANSI color codes (easier reading)
+CONFIG_LOG_TIMESTAMP_SOURCE_RTOS=y         # Use FreeRTOS tick (microsecond precision)
+
+# Maximum log message length
+CONFIG_LOG_MAXIMUM_LEVEL_VERBOSE=y         # Allow VERBOSE logs (disabled at runtime)
+
+# ============================================================================
+# MEMORY CONFIGURATION
+# ============================================================================
+
+# Heap configuration
+CONFIG_HEAP_POISONING_COMPREHENSIVE=y      # Fill freed memory with pattern (debug)
+# CONFIG_HEAP_TRACING_STANDALONE=y         # Enable for leak detection (heavy!)
+
+# Stack sizes for system tasks
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192       # app_main() stack (increased for init)
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
+CONFIG_PTHREAD_TASK_STACK_SIZE_DEFAULT=4096
+
+# ============================================================================
+# SPI CONFIGURATION (for Display + SD Card)
+# ============================================================================
+
+# DMA channel allocation
+CONFIG_SPI_MASTER_IN_IRAM=y                # Place SPI ISR in IRAM (lower latency)
+CONFIG_SPI_MASTER_ISR_IN_IRAM=y
+
+# SPI transaction queue depth
+CONFIG_SPI_SLAVE_ISR_IN_IRAM=y             # For slave mode (future extension)
+
+# ============================================================================
+# STORAGE (LittleFS for SD card)
+# ============================================================================
+
+# LittleFS configuration
+CONFIG_LITTLEFS_MAX_PARTITIONS=3           # Support multiple FS instances
+CONFIG_LITTLEFS_PAGE_SIZE=256              # Match SD card sector size
+CONFIG_LITTLEFS_LOOKAHEAD_SIZE=128         # Wear leveling lookahead
+
+# FatFS (alternative, less resilient)
+# CONFIG_FATFS_LFN_HEAP=y                  # Long filename support in heap
+
+# ============================================================================
+# SECURITY (OTA + Secure Boot)
+# ============================================================================
+
+# OTA Updates
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y    # Auto-rollback on boot failure
+CONFIG_BOOTLOADER_NUM_PIN_APP_TEST=0       # Disable factory reset GPIO
+CONFIG_APP_ROLLBACK_ENABLE=y
+
+# Secure Boot V2 (for production - requires key generation)
+# CONFIG_SECURE_BOOT=y
+# CONFIG_SECURE_BOOT_V2_ENABLED=y
+# CONFIG_SECURE_SIGNED_ON_BOOT=y
+# CONFIG_SECURE_SIGNED_ON_UPDATE=y
+
+# Flash Encryption (for production)
+# CONFIG_SECURE_FLASH_ENC_ENABLED=y
+# CONFIG_SECURE_FLASH_ENCRYPTION_MODE_RELEASE=y
+
+# ============================================================================
+# NETWORKING (for OTA server communication)
+# ============================================================================
+
+# Wi-Fi configuration
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=10
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=32
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=32
+CONFIG_ESP_WIFI_AMPDU_TX_ENABLED=y         # Wi-Fi performance
+CONFIG_ESP_WIFI_AMPDU_RX_ENABLED=y
+
+# TCP/IP stack
+CONFIG_LWIP_MAX_SOCKETS=10                 # Concurrent socket limit
+CONFIG_LWIP_SO_REUSE=y                     # Allow address reuse
+CONFIG_LWIP_TCP_MSS=1440                   # Maximum segment size
+CONFIG_LWIP_TCP_WND_DEFAULT=32768          # TCP window size
+
+# HTTPS OTA
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=n          # Force HTTPS only (security)
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+
+# Dynamic frequency scaling (optional, disabled for predictability)
+# CONFIG_PM_ENABLE=y
+CONFIG_PM_ENABLE=n                         # Disable for deterministic timing
+
+# Light sleep (optional, for battery operation)
+# CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+
+# ============================================================================
+# DEBUGGING & DIAGNOSTICS
+# ============================================================================
+
+# Core dump (save crash info to flash)
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y      # Store core dump in flash
+CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y      # ELF format (full debug info)
+CONFIG_ESP_COREDUMP_CHECKSUM_CRC32=y       # Verify integrity
+
+# GDB stub (JTAG debugging)
+# CONFIG_ESP_GDBSTUB_ENABLED=y             # Enable for GDB debugging
+
+# Assertion behavior
+CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_ENABLE=y  # Keep asserts in release
+CONFIG_COMPILER_OPTIMIZATION_ASSERTION_LEVEL=2    # Full assertions
+
+# Stack smashing protection
+CONFIG_COMPILER_STACK_CHECK_MODE_STRONG=y  # Detect stack corruption
+
+# ============================================================================
+# COMPONENT-SPECIFIC CONFIGURATION
+# ============================================================================
+
+# NVS (Non-Volatile Storage) encryption
+# CONFIG_NVS_ENCRYPTION=y                  # Enable for production
+
+# Ethernet (if adding wired networking)
+# CONFIG_ETH_ENABLED=y
+
+# Bluetooth (disabled, not needed for Wil-OS)
+CONFIG_BT_ENABLED=n
+
+# ============================================================================
+# BUILD OPTIMIZATION
+# ============================================================================
+
+# Compiler optimization level
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y        # -Os: optimize for size
+# CONFIG_COMPILER_OPTIMIZATION_PERF=y      # -O2: optimize for speed
+
+# Link Time Optimization (LTO) - smaller binary, slower build
+CONFIG_COMPILER_OPTIMIZATION_CHECKS_SILENT=y
+
+# ============================================================================
+# APPLICATION-SPECIFIC (Wil-OS custom configs)
+# ============================================================================
+
+# These can be added via Kconfig.projbuild in main/
+# Example:
+# CONFIG_WIL_OS_GUI_FRAMERATE=30
+# CONFIG_WIL_OS_MAX_APPS=10
+# CONFIG_WIL_OS_ENABLE_TELEMETRY=y
+
+# ============================================================================
+# NOTES
+# ============================================================================
+#
+# Critical settings summary:
+#   1. CPU: 240MHz (max performance)
+#   2. PSRAM: Octal mode @ 80MHz (framebuffer + cache)
+#   3. Flash: QIO @ 80MHz (fast app loading)
+#   4. FreeRTOS: 1ms tick, dual-core, watchdogs enabled
+#   5. Stack protection: Comprehensive overflow detection
+#   6. Logging: INFO level with timestamps
+#   7. Security: OTA rollback enabled (Secure Boot commented for dev)
+#
+# Performance expectations with this config:
+#   - Boot time: ~1.5s (bootloader + app init)
+#   - Available heap: ~320KB IRAM + 8MB PSRAM
+#   - SPI throughput: ~5MB/s (DMA-optimized)
+#   - Task switch latency: <1ms
+#
+# Debugging workflow:
+#   1. Development: Keep as-is
+#   2. Performance testing: Enable CONFIG_COMPILER_OPTIMIZATION_PERF
+#   3. Production: Enable Secure Boot + Flash Encryption
+#
+# ============================================================================

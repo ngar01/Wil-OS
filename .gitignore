@@ -1,0 +1,8 @@
+build/
+sdkconfig
+sdkconfig.old
+*.swp
+.vscode/
+tools/signing/*.pem
+tools/signing/*.key
+*.log
