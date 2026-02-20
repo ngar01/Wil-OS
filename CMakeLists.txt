@@ -103,7 +103,7 @@ add_custom_target(memory-map
 add_custom_command(TARGET ${CMAKE_PROJECT_NAME}.elf POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Build completed successfully!"
     COMMAND ${CMAKE_COMMAND} -E echo "Firmware size:"
-    COMMAND ${CMAKE_SIZE} --format=berkeley ${CMAKE_PROJECT_NAME}.elf
+    COMMAND xtensa-esp32s3-elf-size --format=berkeley ${CMAKE_PROJECT_NAME}.elf
     COMMENT "Post-build summary"
 )
 
