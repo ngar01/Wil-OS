@@ -29,6 +29,7 @@
 #define WIL_OS_VERSION_MINOR 0
 #define WIL_OS_VERSION_PATCH 0
 // Wil-OS component headers (to be implemented)
+#include "bsp.h"
 // #include "bsp_common.h"
 // #include "hal_display.h"
 // #include "hal_storage.h"
@@ -92,9 +93,8 @@ static esp_err_t init_bsp(void)
 {
     ESP_LOGI(TAG, "Initializing BSP...");
     
-    // TODO: Implement in Phase 1
-    // esp_err_t ret = bsp_init();
-    // ESP_ERROR_CHECK(ret);
+    esp_err_t ret = bsp_init(NULL); 
+    ESP_ERROR_CHECK(ret);
     
     ESP_LOGI(TAG, "✓ BSP initialized (GPIO, SPI, DMA configured)");
     return ESP_OK;
