@@ -1,11 +1,9 @@
 /**
  * @file bsp_common.h
  * @brief Board Support Package - Common Definitions and Hardware Mapping
- * 
- * This file centralizes all hardware-specific definitions for Wil-OS.
+ * * This file centralizes all hardware-specific definitions for Wil-OS.
  * Changing target hardware only requires updating this file.
- * 
- * @author Wil-OS Team
+ * * @author Wil-OS Team
  * @version 1.0.0
  */
 
@@ -15,6 +13,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "esp_err.h"
+#include "esp_timer.h"    // Added to fix esp_timer_get_time error
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 
@@ -35,12 +34,12 @@ extern "C" {
  * ======================================================================== */
 
 #define BSP_DISPLAY_SPI_HOST        SPI2_HOST       ///< SPI2 (HSPI on ESP32-S3)
-#define BSP_DISPLAY_MOSI_PIN        GPIO_NUM_23     ///< SPI MOSI (Master Out Slave In)
-#define BSP_DISPLAY_SCLK_PIN        GPIO_NUM_18     ///< SPI Clock
-#define BSP_DISPLAY_CS_PIN          GPIO_NUM_5      ///< Chip Select (active low)
-#define BSP_DISPLAY_DC_PIN          GPIO_NUM_2      ///< Data/Command select
-#define BSP_DISPLAY_RST_PIN         GPIO_NUM_4      ///< Reset (active low)
-#define BSP_DISPLAY_BL_PIN          GPIO_NUM_15     ///< Backlight (PWM capable)
+#define BSP_DISPLAY_MOSI_PIN        GPIO_NUM_11     ///< SPI MOSI (Master Out Slave In)
+#define BSP_DISPLAY_SCLK_PIN        GPIO_NUM_12     ///< SPI Clock
+#define BSP_DISPLAY_CS_PIN          GPIO_NUM_10     ///< Chip Select (active low)
+#define BSP_DISPLAY_DC_PIN          GPIO_NUM_14     ///< Data/Command select
+#define BSP_DISPLAY_RST_PIN         GPIO_NUM_17     ///< Reset (active low)
+#define BSP_DISPLAY_BL_PIN          GPIO_NUM_21     ///< Backlight (PWM capable)
 
 // Display SPI configuration
 #define BSP_DISPLAY_SPI_FREQ_HZ     40000000        ///< 40 MHz (ST7735 max: 15MHz write, 6.6MHz read)
@@ -52,10 +51,10 @@ extern "C" {
  * ======================================================================== */
 
 #define BSP_SDCARD_SPI_HOST         SPI2_HOST       ///< Same host as display (shared bus)
-#define BSP_SDCARD_MOSI_PIN         GPIO_NUM_23     ///< Shared with display
-#define BSP_SDCARD_MISO_PIN         GPIO_NUM_19     ///< MISO (Master In Slave Out)
-#define BSP_SDCARD_SCLK_PIN         GPIO_NUM_18     ///< Shared with display
-#define BSP_SDCARD_CS_PIN           GPIO_NUM_14     ///< Chip Select (different from display!)
+#define BSP_SDCARD_MOSI_PIN         GPIO_NUM_11     ///< Shared with display
+#define BSP_SDCARD_MISO_PIN         GPIO_NUM_13     ///< MISO (Master In Slave Out)
+#define BSP_SDCARD_SCLK_PIN         GPIO_NUM_12     ///< Shared with display
+#define BSP_SDCARD_CS_PIN           GPIO_NUM_9      ///< Chip Select (different from display!)
 
 // SD Card SPI configuration
 #define BSP_SDCARD_SPI_FREQ_HZ      20000000        ///< 20 MHz (SD card typically 20-25 MHz)
@@ -65,16 +64,16 @@ extern "C" {
  * ======================================================================== */
 
 // Row pins (outputs, driven by ESP32)
-#define BSP_KEYPAD_ROW1_PIN         GPIO_NUM_25
-#define BSP_KEYPAD_ROW2_PIN         GPIO_NUM_26
-#define BSP_KEYPAD_ROW3_PIN         GPIO_NUM_27
-#define BSP_KEYPAD_ROW4_PIN         GPIO_NUM_33
+#define BSP_KEYPAD_ROW1_PIN         GPIO_NUM_1
+#define BSP_KEYPAD_ROW2_PIN         GPIO_NUM_2
+#define BSP_KEYPAD_ROW3_PIN         GPIO_NUM_3
+#define BSP_KEYPAD_ROW4_PIN         GPIO_NUM_4
 
 // Column pins (inputs with pull-ups)
-#define BSP_KEYPAD_COL1_PIN         GPIO_NUM_32
-#define BSP_KEYPAD_COL2_PIN         GPIO_NUM_35
-#define BSP_KEYPAD_COL3_PIN         GPIO_NUM_34
-#define BSP_KEYPAD_COL4_PIN         GPIO_NUM_39
+#define BSP_KEYPAD_COL1_PIN         GPIO_NUM_5
+#define BSP_KEYPAD_COL2_PIN         GPIO_NUM_6
+#define BSP_KEYPAD_COL3_PIN         GPIO_NUM_7
+#define BSP_KEYPAD_COL4_PIN         GPIO_NUM_8
 
 // Keypad scanning parameters
 #define BSP_KEYPAD_SCAN_PERIOD_MS   20              ///< Scan every 20ms
